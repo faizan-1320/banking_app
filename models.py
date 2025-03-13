@@ -1,5 +1,6 @@
 from database import Base
 from sqlalchemy import Column,String,Integer,Text,ForeignKey,Enum
+from sqlalchemy.orm import relationship
 from enum import Enum as PyEnum
 
 class AccountTypeEnum(PyEnum):
@@ -11,21 +12,23 @@ class AccountTypeEnum(PyEnum):
     NRI='NRI'
 
 class Account(Base):
-    __abstract__ = True
+    __tablename__="accounts"
 
     id = Column(Integer,primary_key=True,index=True)
     branchName = Column(String(100))
-    accountNumber = Column(String(18),nullable=False)
-    ifscCode = Column(String(11),nullable=False)
+    accountNumber = Column(String(18),nullable=True)
+    ifscCode = Column(String(11),nullable=True)
     bankAddress = Column(Text)
-    accountType = Column(Enum(AccountTypeEnum),nullable=False)
+    accountType = Column(Enum(AccountTypeEnum),nullable=True)
+
+    userAccounts = relationship('UserAccount', back_populates='account')
     
 class UserTypeEnum(PyEnum):
     ADMIN='Admin'
     USER='User'
 
-class UserAccount(Account):
-    __tablename__="UserAccount"
+class User(Base):
+    __tablename__="users"
 
     id = Column(Integer,primary_key=True,index=True)
     name = Column(String(100), nullable=False)
@@ -33,4 +36,16 @@ class UserAccount(Account):
     mobileNumber = Column(String(16))
     address = Column(Text)
     password = Column(String(255))
-    userType=Column(Enum(UserTypeEnum),nullable=False)
+    userType=Column(Enum(UserTypeEnum),nullable=False,default=UserTypeEnum.USER)
+
+    userAccounts = relationship('UserAccount', back_populates='user')
+
+class UserAccount(Base):
+    __tablename__="userAccounts"
+
+    id = Column(Integer,primary_key=True,index=True)
+    accountId = Column(Integer, ForeignKey('accounts.id'))
+    userId = Column(Integer, ForeignKey('users.id'))
+
+    account = relationship('Account', back_populates='userAccounts')
+    user = relationship('User', back_populates='userAccounts')
